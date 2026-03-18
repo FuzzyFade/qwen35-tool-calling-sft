@@ -52,7 +52,7 @@ DEFAULT_CONFIG = {
     "gradient_accumulation_steps": 8,  # 有效 batch size = 2 * 8 = 16
     "max_steps": 2000,
     "learning_rate": 2e-5,
-    "warmup_ratio": 0.05,
+    "warmup_steps": 100,
     "lr_scheduler_type": "cosine",
     "weight_decay": 0.01,
     "fp16": False,
@@ -252,7 +252,7 @@ def main():
         max_steps=args.max_steps if args.num_train_epochs is None else -1,
         num_train_epochs=args.num_train_epochs if args.num_train_epochs is not None else 1,
         learning_rate=args.learning_rate,
-        warmup_ratio=DEFAULT_CONFIG["warmup_ratio"],
+        warmup_steps=DEFAULT_CONFIG["warmup_steps"],
         lr_scheduler_type=DEFAULT_CONFIG["lr_scheduler_type"],
         weight_decay=DEFAULT_CONFIG["weight_decay"],
         fp16=DEFAULT_CONFIG["fp16"],
