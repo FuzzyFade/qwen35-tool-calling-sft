@@ -91,8 +91,9 @@ def load_training_data(data_dir: str, tokenizer):
         """直接读 JSONL 并转为纯文本，绕过 datasets 的类型推断问题"""
         texts = []
         skipped = 0
+        errors = []
         with open(filepath, encoding="utf-8") as f:
-            for line in f:
+            for i, line in enumerate(f):
                 try:
                     sample = json.loads(line)
                     messages = sample.get("messages", [])
@@ -128,10 +129,16 @@ def load_training_data(data_dir: str, tokenizer):
                     )
                     if text:
                         texts.append(text)
-                except Exception:
+                except Exception as e:
                     skipped += 1
+                    if len(errors) < 5:
+                        errors.append(f"  Row {i}: {type(e).__name__}: {e}")
 
         print(f"  {filepath}: {len(texts)} OK, {skipped} skipped")
+        if errors:
+            print("  First errors:")
+            for err in errors:
+                print(err)
         return Dataset.from_dict({"text": texts})
 
     print("格式化训练数据...")
