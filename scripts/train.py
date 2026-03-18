@@ -50,9 +50,9 @@ DEFAULT_CONFIG = {
     # 训练
     "per_device_train_batch_size": 2,
     "gradient_accumulation_steps": 8,  # 有效 batch size = 2 * 8 = 16
-    "max_steps": 2000,
+    "max_steps": 1000,
     "learning_rate": 2e-5,
-    "warmup_steps": 100,
+    "warmup_steps": 50,
     "lr_scheduler_type": "cosine",
     "weight_decay": 0.01,
     "fp16": False,
@@ -290,7 +290,7 @@ def main():
         report_to=report_to,
         run_name=f"qwen35-9b-tool-sft-r{args.lora_r}",
         dataset_text_field="text",
-        packing=False,  # 工具调用数据不适合 packing
+        packing=True,  # 短样本拼接，大幅提高 GPU 利用率
     )
 
     trainer = SFTTrainer(
