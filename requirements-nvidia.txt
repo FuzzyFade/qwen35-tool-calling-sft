@@ -1,0 +1,11 @@
+torch>=2.4.0
+unsloth[colab-new]>=2025.3
+trl>=0.15.0
+transformers>=5.0.0
+datasets>=3.0.0
+peft>=0.14.0
+accelerate>=1.0.0
+bitsandbytes>=0.45.0
+safetensors>=0.4.3
+huggingface_hub>=0.25.0
+wandb

@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Data (too large for git, use HuggingFace Datasets or manual upload)
+data/*.jsonl
+
+# Training outputs
+output/
+adapters/
+logs/*.log
+wandb/
+
+# MLX (deprecated, now using NVIDIA)
+qwen35-9b-mlx-4bit/
+*.safetensors
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
