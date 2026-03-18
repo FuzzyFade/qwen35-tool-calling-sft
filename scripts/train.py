@@ -34,7 +34,7 @@ DEFAULT_CONFIG = {
     # 模型
     "model_name": "Qwen/Qwen3.5-9B-Base",
     "max_seq_length": 2048,
-    "load_in_16bit": False,  # 默认 4-bit QLoRA，9B+248k词表 显存需求大
+    "load_in_16bit": True,  # bf16 LoRA，配合 batch=1 + seq=2048 适配 40GB
 
     # LoRA
     "lora_r": 32,
