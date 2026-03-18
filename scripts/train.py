@@ -205,13 +205,21 @@ def main():
 
     print("[1/4] 加载模型...")
     load_16bit = DEFAULT_CONFIG["load_in_16bit"]
-    model, tokenizer = FastLanguageModel.from_pretrained(
+    model, processor = FastLanguageModel.from_pretrained(
         model_name=args.model_name,
         max_seq_length=args.max_seq_length,
         load_in_4bit=not load_16bit,
         load_in_16bit=load_16bit,
         dtype=None,
     )
+
+    # Qwen3.5 是 VLM，Unsloth 返回 processor 而不是 tokenizer
+    # 需要提取内部的 tokenizer 才能用 apply_chat_template
+    if hasattr(processor, 'tokenizer'):
+        tokenizer = processor.tokenizer
+        print(f"  从 processor 中提取 tokenizer: {type(tokenizer).__name__}")
+    else:
+        tokenizer = processor
 
     # ================================================================
     # 2. 配置 LoRA
@@ -283,7 +291,7 @@ def main():
 
     trainer = SFTTrainer(
         model=model,
-        tokenizer=tokenizer,
+        tokenizer=processor,
         train_dataset=train_dataset,
         eval_dataset=valid_dataset,
         args=training_args,
@@ -301,12 +309,12 @@ def main():
     # 保存 LoRA 适配器
     adapter_dir = os.path.join(args.output_dir, "final_adapter")
     model.save_pretrained(adapter_dir)
-    tokenizer.save_pretrained(adapter_dir)
+    processor.save_pretrained(adapter_dir)
     print(f"  LoRA 适配器已保存: {adapter_dir}")
 
     # 保存合并后的完整模型 (bf16)
     merged_dir = os.path.join(args.output_dir, "merged_bf16")
-    model.save_pretrained_merged(merged_dir, tokenizer, save_method="merged_16bit")
+    model.save_pretrained_merged(merged_dir, processor, save_method="merged_16bit")
     print(f"  合并模型 (bf16) 已保存: {merged_dir}")
 
     print()
