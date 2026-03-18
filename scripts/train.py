@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 
 import torch
-from datasets import load_dataset
+from datasets import Dataset
 from trl import SFTTrainer, SFTConfig
 from unsloth import FastLanguageModel
 
@@ -87,68 +87,60 @@ def load_training_data(data_dir: str, tokenizer):
     if not os.path.exists(train_path):
         raise FileNotFoundError(f"训练数据不存在: {train_path}")
 
-    # 加载 JSONL 文件
-    train_dataset = load_dataset("json", data_files=train_path, split="train")
-    valid_dataset = None
-    if os.path.exists(valid_path):
-        valid_dataset = load_dataset("json", data_files=valid_path, split="train")
+    def load_and_format(filepath):
+        """直接读 JSONL 并转为纯文本，绕过 datasets 的类型推断问题"""
+        texts = []
+        skipped = 0
+        with open(filepath, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    sample = json.loads(line)
+                    messages = sample.get("messages", [])
+                    tools = sample.get("tools") or None
 
-    print(f"训练集: {len(train_dataset)} 样本")
-    if valid_dataset:
-        print(f"验证集: {len(valid_dataset)} 样本")
+                    cleaned = []
+                    for m in messages:
+                        msg = {"role": m["role"], "content": m.get("content")}
+                        if m.get("tool_calls"):
+                            tcs = []
+                            for tc in m["tool_calls"]:
+                                func = tc.get("function", tc)
+                                args = func.get("arguments", {})
+                                if isinstance(args, str):
+                                    try:
+                                        args = json.loads(args)
+                                    except (json.JSONDecodeError, TypeError):
+                                        args = {}
+                                if not isinstance(args, dict):
+                                    args = {}
+                                tcs.append({
+                                    "type": "function",
+                                    "function": {"name": func.get("name", ""), "arguments": args}
+                                })
+                            msg["tool_calls"] = tcs
+                            msg["content"] = None
+                        if m.get("name"):
+                            msg["name"] = m["name"]
+                        cleaned.append(msg)
 
-    def format_sample(sample):
-        """将 messages + tools 格式转为模型需要的文本"""
-        try:
-            messages = sample.get("messages", [])
-            tools = sample.get("tools") or None
+                    text = tokenizer.apply_chat_template(
+                        cleaned, tools=tools, tokenize=False, add_generation_prompt=False,
+                    )
+                    if text:
+                        texts.append(text)
+                except Exception:
+                    skipped += 1
 
-            # datasets 库加载 JSONL 后可能改变嵌套结构的类型
-            # 需要清洗 tool_calls.arguments 确保是 dict
-            cleaned = []
-            for m in messages:
-                msg = {"role": m["role"], "content": m.get("content")}
-                if m.get("tool_calls"):
-                    tcs = []
-                    for tc in m["tool_calls"]:
-                        func = tc.get("function", tc)
-                        args = func.get("arguments", {})
-                        if isinstance(args, str):
-                            try:
-                                args = json.loads(args)
-                            except (json.JSONDecodeError, TypeError):
-                                args = {}
-                        if not isinstance(args, dict):
-                            args = {}
-                        tcs.append({
-                            "type": "function",
-                            "function": {"name": func.get("name", ""), "arguments": args}
-                        })
-                    msg["tool_calls"] = tcs
-                    msg["content"] = None
-                if m.get("name"):
-                    msg["name"] = m["name"]
-                cleaned.append(msg)
-
-            text = tokenizer.apply_chat_template(
-                cleaned,
-                tools=tools,
-                tokenize=False,
-                add_generation_prompt=False,
-            )
-            return {"text": text}
-        except Exception as e:
-            return {"text": ""}
+        print(f"  {filepath}: {len(texts)} OK, {skipped} skipped")
+        return Dataset.from_dict({"text": texts})
 
     print("格式化训练数据...")
-    train_dataset = train_dataset.map(format_sample, num_proc=1)
-    # 过滤空样本
-    train_dataset = train_dataset.filter(lambda x: len(x["text"]) > 0)
+    train_dataset = load_and_format(train_path)
 
-    if valid_dataset:
+    valid_dataset = None
+    if os.path.exists(valid_path):
         print("格式化验证数据...")
-        valid_dataset = valid_dataset.map(format_sample, num_proc=1)
-        valid_dataset = valid_dataset.filter(lambda x: len(x["text"]) > 0)
+        valid_dataset = load_and_format(valid_path)
 
     print(f"格式化后训练集: {len(train_dataset)} 样本")
     if valid_dataset:
