@@ -180,11 +180,13 @@ def main():
     print()
 
     print("[1/4] 加载模型...")
+    load_16bit = DEFAULT_CONFIG["load_in_16bit"]
     model, tokenizer = FastLanguageModel.from_pretrained(
         model_name=args.model_name,
         max_seq_length=args.max_seq_length,
-        load_in_16bit=DEFAULT_CONFIG["load_in_16bit"],
-        dtype=None,  # 自动检测
+        load_in_4bit=not load_16bit,
+        load_in_16bit=load_16bit,
+        dtype=None,
     )
 
     # ================================================================
