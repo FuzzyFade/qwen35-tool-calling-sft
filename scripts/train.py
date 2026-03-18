@@ -260,6 +260,10 @@ def main():
     if not args.no_wandb:
         os.environ.setdefault("WANDB_PROJECT", args.wandb_project)
 
+    # 修复 Unsloth fix_untrained_tokens 与 PyTorch meta tensor 的兼容性问题
+    import torch.fx.experimental._config as fx_config
+    fx_config.meta_nonzero_assume_all_nonzero = True
+
     training_args = SFTConfig(
         output_dir=args.output_dir,
         per_device_train_batch_size=args.per_device_train_batch_size,
