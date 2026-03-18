@@ -131,7 +131,7 @@ def main():
         print(f"测试 {i}/{len(TEST_CASES)}: {tc['name']}")
         print(f"{'=' * 60}")
         print(f"User: {tc['messages'][0]['content']}")
-        if tc['tools']:
+        if tc.get('tools'):
             tool_names = [t['function']['name'] for t in tc['tools']]
             print(f"Tools: {', '.join(tool_names)}")
         print()

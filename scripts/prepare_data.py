@@ -621,7 +621,7 @@ def convert_openclaw(output_dir: Path) -> list:
     print("[7/7] Loading bellfire/openclaw-coder-dataset ...")
 
     results = []
-    for split_name in ["train", "eval"]:
+    for split_name in ["train", "test"]:
         try:
             ds = load_dataset("bellfire/openclaw-coder-dataset", split=split_name)
         except Exception:

@@ -176,7 +176,7 @@ def main():
     print("=" * 60)
     print(f"模型: {args.model_name}")
     print(f"GPU: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'N/A'}")
-    print(f"VRAM: {torch.cuda.get_device_properties(0).total_mem / 1e9:.1f} GB" if torch.cuda.is_available() else "")
+    print(f"VRAM: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB" if torch.cuda.is_available() else "")
     print()
 
     print("[1/4] 加载模型...")
@@ -231,7 +231,7 @@ def main():
         per_device_train_batch_size=args.per_device_train_batch_size,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         max_steps=args.max_steps if args.num_train_epochs is None else -1,
-        num_train_epochs=args.num_train_epochs if args.num_train_epochs else 1,
+        num_train_epochs=args.num_train_epochs if args.num_train_epochs is not None else 1,
         learning_rate=args.learning_rate,
         warmup_ratio=DEFAULT_CONFIG["warmup_ratio"],
         lr_scheduler_type=DEFAULT_CONFIG["lr_scheduler_type"],

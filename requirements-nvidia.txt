@@ -1,7 +1,7 @@
 torch>=2.4.0
-unsloth[colab-new]>=2025.3
+unsloth>=2025.3
 trl>=0.15.0
-transformers>=5.0.0
+transformers>=5.2.0
 datasets>=3.0.0
 peft>=0.14.0
 accelerate>=1.0.0
