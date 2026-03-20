@@ -1,6 +1,10 @@
-# Qwen3.5-9B-Base Tool-Calling SFT
+# Qwen3.5-9B-Base Tool-Calling SFT + GSPO
 
-基于 Qwen3.5-9B-Base 的工具调用/Agent 能力监督微调项目。
+基于 Qwen3.5-9B-Base 的工具调用/Agent 能力微调项目。
+
+两阶段训练：
+1. **SFT** — 监督微调，教模型学会工具调用格式和模式
+2. **GSPO** — 强化学习 (Group Sequence Policy Optimization)，让模型通过自我探索优化工具选择准确性
 
 使用 Unsloth + TRL 框架，100k 中英双语工具调用数据，支持 Colab 一键训练。
 
@@ -83,18 +87,38 @@ python scripts/export_gguf.py --model_dir ./output/merged_bf16
 ## 项目结构
 
 ```
-├── Qwen35_9B_Tool_Calling_SFT.ipynb   # Colab Notebook
+├── Qwen35_9B_Tool_Calling_SFT.ipynb   # 阶段 1: SFT Notebook
+├── Qwen35_9B_Tool_Calling_GSPO.ipynb  # 阶段 2: GSPO Notebook
 ├── scripts/
-│   ├── prepare_data.py                 # 数据准备（7 数据集 → 统一 JSONL）
-│   ├── train.py                        # 训练脚本 (Unsloth + TRL)
+│   ├── prepare_data.py                 # SFT 数据准备（7 数据集 → 统一 JSONL）
+│   ├── prepare_grpo_data.py            # GRPO 数据准备（提取 prompt + expected）
+│   ├── train.py                        # SFT 训练脚本 (Unsloth + TRL)
 │   ├── eval_tool_calling.py            # 工具调用评测
 │   └── export_gguf.py                  # GGUF 导出
 ├── data/                               # 训练数据（gitignore，需本地生成）
-│   ├── train.jsonl
-│   └── valid.jsonl
+│   ├── train.jsonl                     # SFT 数据 (90k)
+│   ├── valid.jsonl                     # SFT 验证集 (10k)
+│   └── grpo_train.jsonl                # GRPO 数据 (8k)
 ├── requirements-nvidia.txt
 └── run.sh
 ```
+
+## 两阶段训练
+
+### 阶段 1: SFT（监督微调）
+
+用标注数据教模型学会工具调用格式。详见 `Qwen35_9B_Tool_Calling_SFT.ipynb`。
+
+### 阶段 2: GSPO（强化学习）
+
+在 SFT 模型基础上，用 GSPO 让模型通过自我探索优化工具选择。详见 `Qwen35_9B_Tool_Calling_GSPO.ipynb`。
+
+GSPO (Group Sequence Policy Optimization) 是 Qwen 团队提出的 GRPO 改进版，将重要性采样从 token 级改到 sequence 级。
+
+**Reward 函数**:
+- `tool_selection_reward` (权重 2.0): 选对了工具 +1.0, 调错 -0.5
+- `format_reward` (权重 1.0): 输出格式合规 +1.0
+- `args_reward` (权重 1.5): 参数匹配度 0.0~1.0
 
 ## 数据格式
 
